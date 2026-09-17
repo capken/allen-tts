@@ -124,6 +124,10 @@ git tag v0.1.0 && git push origin v0.1.0
 版本号通过 `-ldflags` 注入；`go install` 等未注入的场景回退到 module 版本（`runtime/debug.ReadBuildInfo`）。
 重跑同一个 tag 会覆盖产物而不是失败，也可在 Actions 页面手动触发并指定 tag。
 
+**改动技能时注意顺序**：README 里那段安装提示词锁定了具体 tag，而 tag 指向的提交必须已经包含
+`skills/` 目录。所以务必先把改动合并进 `main`，再在 `main` 上打 tag——反过来会得到一个
+clone 下来没有技能目录的 tag。
+
 ## 作为 Agent 技能使用
 
 仓库里的 [`skills/allen-tts/`](skills/allen-tts/) 是一个 agent 技能，让 agent 能引导用户完成
@@ -135,9 +139,9 @@ git tag v0.1.0 && git push origin v0.1.0
 ```text
 请帮我安装 allen-tts 技能（一个多厂商 TTS 命令行工具的使用技能）。
 
-1. 获取 v0.2.0 版本的技能目录，二选一：
-   git clone --depth 1 --branch v0.2.0 https://github.com/capken/allen-tts /tmp/allen-tts-skill
-   或者下载 https://github.com/capken/allen-tts/archive/refs/tags/v0.2.0.tar.gz 后解压。
+1. 获取 v0.2.1 版本的技能目录，二选一：
+   git clone --depth 1 --branch v0.2.1 https://github.com/capken/allen-tts /tmp/allen-tts-skill
+   或者下载 https://github.com/capken/allen-tts/archive/refs/tags/v0.2.1.tar.gz 后解压。
 
 2. 把其中的 skills/allen-tts/ 整个目录复制到你加载技能的位置，目录名保持 allen-tts。
    Claude Code 放到 ~/.claude/skills/allen-tts/；其他 agent 放到你自己的技能或规则目录。
@@ -156,7 +160,7 @@ git tag v0.1.0 && git push origin v0.1.0
 ```
 
 第 4、5 步是有意加的：安装技能等于往你的机器里放入会被后续对话自动加载的指令，
-应该先看清内容再启用。同理，上面锁定了 `v0.2.0` 这个 tag 而不是 `main`，
+应该先看清内容再启用。同理，上面锁定了 `v0.2.1` 这个 tag 而不是 `main`，
 这样你和别人装到的是同一份东西。
 
 ### 更新
