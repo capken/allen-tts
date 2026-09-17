@@ -6,10 +6,23 @@
 
 ## 安装
 
+单二进制，无运行时依赖。三选一：
+
 ```bash
-make build          # 产出 bin/allen-tts（单二进制，无运行时依赖）
+# 1) 一键安装脚本（推荐）：自动识别平台、校验 sha256
+curl -fsSL https://raw.githubusercontent.com/capken/allen-tts/main/scripts/install.sh | sh
+
+# 2) 有 Go 工具链
+go install github.com/capken/allen-tts/cmd/allen-tts@latest
+
+# 3) 从源码构建
+make build          # 产出 bin/allen-tts
 make cross          # 交叉编译 darwin/linux × amd64/arm64
 ```
+
+安装脚本默认装到 `/usr/local/bin`，不可写时回退到 `~/.local/bin`（不会静默提权）。
+可用 `PREFIX=~/bin` 指定目录、`VERSION=v0.1.0` 指定版本。
+也可以直接从 [Releases](https://github.com/capken/allen-tts/releases) 下载对应平台的 tar.gz。
 
 ## 快速开始
 
@@ -98,6 +111,18 @@ allen-tts speak -p minimax -v @narrator "你好"
 make test    # 单元测试（映射、clamp、响应解析、SSE、错误码）
 make vet
 ```
+
+### 发布
+
+推一个 `v*` tag 即触发 [release workflow](.github/workflows/release.yml)：先跑 `go vet` + 全量测试作为门禁，
+再交叉编译 darwin/linux × amd64/arm64，带 sha256 校验文件发到 GitHub Releases。
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+版本号通过 `-ldflags` 注入；`go install` 等未注入的场景回退到 module 版本（`runtime/debug.ReadBuildInfo`）。
+重跑同一个 tag 会覆盖产物而不是失败，也可在 Actions 页面手动触发并指定 tag。
 
 ## v1 已知边界（见设计文档第 1.2 / 10 节）
 
