@@ -124,9 +124,9 @@ git tag v0.1.0 && git push origin v0.1.0
 版本号通过 `-ldflags` 注入；`go install` 等未注入的场景回退到 module 版本（`runtime/debug.ReadBuildInfo`）。
 重跑同一个 tag 会覆盖产物而不是失败，也可在 Actions 页面手动触发并指定 tag。
 
-**改动技能时注意顺序**：README 里那段安装提示词锁定了具体 tag，而 tag 指向的提交必须已经包含
-`skills/` 目录。所以务必先把改动合并进 `main`，再在 `main` 上打 tag——反过来会得到一个
-clone 下来没有技能目录的 tag。
+**改动技能时注意顺序**：安装提示词会解析「最新发布版本」，所以最新的那个 Release 对应的提交
+必须已经包含 `skills/` 目录。务必先把改动合并进 `main`，确认 `ls skills/allen-tts/` 有内容，
+再在 `main` 上打 tag——反过来会发布一个没有技能目录的版本。
 
 ## 作为 Agent 技能使用
 
@@ -139,29 +139,36 @@ clone 下来没有技能目录的 tag。
 ```text
 请帮我安装 allen-tts 技能（一个多厂商 TTS 命令行工具的使用技能）。
 
-1. 获取 v0.2.1 版本的技能目录，二选一：
-   git clone --depth 1 --branch v0.2.1 https://github.com/capken/allen-tts /tmp/allen-tts-skill
-   或者下载 https://github.com/capken/allen-tts/archive/refs/tags/v0.2.1.tar.gz 后解压。
+1. 先查出最新的发布版本号，下面记作 <TAG>（形如 v0.2.2）：
+   curl -s https://api.github.com/repos/capken/allen-tts/releases/latest | grep '"tag_name"'
 
-2. 把其中的 skills/allen-tts/ 整个目录复制到你加载技能的位置，目录名保持 allen-tts。
+2. 获取该版本的技能目录，二选一：
+   git clone --depth 1 --branch <TAG> https://github.com/capken/allen-tts /tmp/allen-tts-skill
+   或者下载 https://github.com/capken/allen-tts/archive/refs/tags/<TAG>.tar.gz 后解压。
+
+3. 把其中的 skills/allen-tts/ 整个目录复制到你加载技能的位置，目录名保持 allen-tts。
    Claude Code 放到 ~/.claude/skills/allen-tts/；其他 agent 放到你自己的技能或规则目录。
    如果你的技能格式和 SKILL.md 的 frontmatter 不一致，请做相应转换，但不要改动正文内容。
 
-3. 给 scripts/ 目录下的 .sh 文件加上可执行权限。
+4. 给 scripts/ 目录下的 .sh 文件加上可执行权限。
 
-4. 装完后告诉我这几件事，让我确认装进来的是什么：
+5. 装完后告诉我这几件事，让我确认装进来的是什么：
+   - 你实际安装的是哪个 <TAG>
    - 技能所在的绝对路径
    - 目录下的文件清单
    - VERSION 文件的内容
    - SKILL.md 中 description 字段的原文
    - SKILL.md 正文的要点摘要，特别是它会让你执行哪些命令
 
-5. 在我确认之前，不要执行技能里的任何脚本。
+6. 在我确认之前，不要执行技能里的任何脚本。
 ```
 
-第 4、5 步是有意加的：安装技能等于往你的机器里放入会被后续对话自动加载的指令，
-应该先看清内容再启用。同理，上面锁定了 `v0.2.1` 这个 tag 而不是 `main`，
-这样你和别人装到的是同一份东西。
+第 5、6 步是有意加的：安装技能等于往你的机器里放入会被后续对话自动加载的指令，
+应该先看清内容再启用。
+
+第 1 步先解析出最新发布版本再安装，而不是直接跟踪 `main`：发布 tag 是不可变的，
+且是有意发布、带 release notes 的，装完 agent 会回报它用的是哪个版本，你随时能复现。
+跟踪 `main` 则拿不到这些保证。
 
 ### 更新
 
