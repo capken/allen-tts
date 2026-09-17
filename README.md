@@ -124,6 +124,73 @@ git tag v0.1.0 && git push origin v0.1.0
 版本号通过 `-ldflags` 注入；`go install` 等未注入的场景回退到 module 版本（`runtime/debug.ReadBuildInfo`）。
 重跑同一个 tag 会覆盖产物而不是失败，也可在 Actions 页面手动触发并指定 tag。
 
+## 作为 Agent 技能使用
+
+仓库里的 [`skills/allen-tts/`](skills/allen-tts/) 是一个 agent 技能，让 agent 能引导用户完成
+安装与初始化，之后直接按需求调用本工具合成语音。它是纯 markdown 加 shell 脚本，
+不依赖任何特定 agent 的打包格式。
+
+### 安装：把下面这段话发给你的 agent
+
+```text
+请帮我安装 allen-tts 技能（一个多厂商 TTS 命令行工具的使用技能）。
+
+1. 获取 v0.2.0 版本的技能目录，二选一：
+   git clone --depth 1 --branch v0.2.0 https://github.com/capken/allen-tts /tmp/allen-tts-skill
+   或者下载 https://github.com/capken/allen-tts/archive/refs/tags/v0.2.0.tar.gz 后解压。
+
+2. 把其中的 skills/allen-tts/ 整个目录复制到你加载技能的位置，目录名保持 allen-tts。
+   Claude Code 放到 ~/.claude/skills/allen-tts/；其他 agent 放到你自己的技能或规则目录。
+   如果你的技能格式和 SKILL.md 的 frontmatter 不一致，请做相应转换，但不要改动正文内容。
+
+3. 给 scripts/ 目录下的 .sh 文件加上可执行权限。
+
+4. 装完后告诉我这几件事，让我确认装进来的是什么：
+   - 技能所在的绝对路径
+   - 目录下的文件清单
+   - VERSION 文件的内容
+   - SKILL.md 中 description 字段的原文
+   - SKILL.md 正文的要点摘要，特别是它会让你执行哪些命令
+
+5. 在我确认之前，不要执行技能里的任何脚本。
+```
+
+第 4、5 步是有意加的：安装技能等于往你的机器里放入会被后续对话自动加载的指令，
+应该先看清内容再启用。同理，上面锁定了 `v0.2.0` 这个 tag 而不是 `main`，
+这样你和别人装到的是同一份东西。
+
+### 更新
+
+技能每次运行时会做一次带缓存的版本检查（每天最多一次，网络不通就跳过）。
+有新版本时它会在完成当前任务后提示你，并附上 release notes 链接，由你决定是否更新。
+它不会自动更新自己。
+
+更新就是按新的 tag 重跑上面那段安装流程、覆盖旧目录即可——技能目录是无状态的，
+你的配置、密钥引用和音色别名都在 `~/.allen-tts/` 下，不会丢失。
+
+### 版本号说明
+
+技能有自己的版本（`skills/allen-tts/VERSION`），和命令行工具的版本、仓库 tag 是**相互独立**的。
+这样只改命令行工具的发版不会让所有用户收到"技能有更新"的误报。
+更新检查比对的是技能自己的版本号。
+
+### 技能目录结构
+
+```
+skills/allen-tts/
+├── SKILL.md                    # 主流程：先探测状态，再分支到引导或合成
+├── VERSION                     # 技能版本，用于更新检查
+├── scripts/
+│   ├── preflight.sh            # 一次性探测全部状态，输出 JSON
+│   └── configure.sh            # 幂等写入默认服务商与默认音色别名
+└── references/
+    ├── setup.md                # 四步引导：安装、选服务商、配密钥、选音色
+    ├── usage.md                # 合成参数、三家能力差异、长文本策略
+    └── troubleshooting.md      # 退出码与常见现象的处置
+```
+
+技能本身不保存任何密钥。密钥只通过环境变量提供，配置文件里仅保留 `${ENV}` 引用。
+
 ## v1 已知边界（见设计文档第 1.2 / 10 节）
 
 - 不支持 WebSocket 双向流式（Cartesia 流式待后续版本）。
